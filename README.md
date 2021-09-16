@@ -2,8 +2,8 @@
 
 # 코드 설명
 
-##1. 구조체 생성하기
-
+## 1. 구조체 생성하기
+```
 // 토큰 종류 열거형
 typedef enum _TOKEN_TYPE {
 	TOKEN_STRING,    // 문자열 토큰
@@ -26,3 +26,4 @@ typedef struct _TOKEN {
 typedef struct _JSON {
 	TOKEN tokens[TOKEN_COUNT]; // 토큰 배열
 } JSON;
+```
