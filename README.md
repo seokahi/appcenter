@@ -169,6 +169,6 @@ int main()
 }
 ```
 
-## 출력결과
+# 출력결과
 ![image](https://user-images.githubusercontent.com/73926393/133616287-ad9a58b4-5cb9-4116-af5c-d7e030d5d4f2.png)
 
