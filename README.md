@@ -1,5 +1,19 @@
 # 앱센터 과제
 
+# JSON 파일
+```
+[
+    {
+        "name": "샌액희",
+        "studentId": "202199999"
+    },
+    {
+        "name": "개발자",
+        "studentId": "202099999"
+    }
+]
+```
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # 코드 설명
 
 ## 1. 구조체 생성하기
@@ -27,3 +41,131 @@ typedef struct _JSON {
 	TOKEN tokens[TOKEN_COUNT]; // 토큰 배열
 } JSON;
 ```
+## 2. JSON 파일 읽기
+```
+char *readFile(char *filename, int *readSize)    // 파일을 읽어서 내용을 반환하는 함수
+{
+	FILE *fp = fopen(filename, "rb");
+	if (fp == NULL)
+		return NULL;
+
+	int size;
+	char *buffer;
+
+	// 파일 크기 구하기
+	fseek(fp, 0, SEEK_END);
+	size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	// 파일 크기 + NULL 공간만큼 메모리를 할당하고 0으로 초기화
+	buffer = malloc(size + 1);
+	memset(buffer, 0, size + 1);
+
+	// 파일 내용 읽기
+	if (fread(buffer, size, 1, fp) < 1)
+	{
+		*readSize = 0;
+		free(buffer);
+		fclose(fp);
+		return NULL;
+	}
+
+	// 파일 크기를 넘겨줌
+	*readSize = size;
+
+	fclose(fp);    // 파일 포인터 닫기
+	
+	return buffer;
+}
+```
+## 3.JSON에서 문자열 파싱하기
+```
+void parseJSON(char *doc, int size, JSON *json)    // JSON 파싱 함수
+{
+	int tokenIndex = 0;    // 토큰 인덱스
+	int pos = 0;           // 문자 검색 위치를 저장하는 변수
+
+	if (doc[pos] != '[')   // 문서의 s시작이 [인지 검사
+		return;
+
+	pos++;    // 다음 문자로
+
+	while (pos < size)       // 문서 크기만큼 반복
+	{
+		switch (doc[pos])    // 문자의 종류에 따라 분기
+		{
+		case '"':            // 문자가 "이면 문자열
+		{
+			// 문자열의 시작 위치를 구함. 맨 앞의 "를 제외하기 위해 + 1
+			char *begin = doc + pos + 1;
+
+			// 문자열의 끝 위치를 구함. 다음 "의 위치
+			char *end = strchr(begin, '"');
+			if (end == NULL)    // "가 없으면 잘못된 문법이므로 
+				break;          // 반복을 종료
+
+			int stringLength = end - begin;    // 문자열의 실제 길이는 끝 위치 - 시작 위치
+
+			// 토큰 배열에 문자열 저장
+			// 토큰 종류는 문자열
+			json->tokens[tokenIndex].type = TOKEN_STRING;
+			// 문자열 길이 + NULL 공간만큼 메모리 할당
+			json->tokens[tokenIndex].string = malloc(stringLength + 1);
+			// 할당한 메모리를 0으로 초기화
+			memset(json->tokens[tokenIndex].string, 0, stringLength + 1);
+
+			// 문서에서 문자열을 토큰에 저장
+			// 문자열 시작 위치에서 문자열 길이만큼만 복사
+			memcpy(json->tokens[tokenIndex].string, begin, stringLength);
+
+			tokenIndex++; // 토큰 인덱스 증가
+
+			pos = pos + stringLength + 1;    // 현재 위치 + 문자열 길이 + "(+ 1)
+		}
+		break;
+		}
+
+		pos++; // 다음 문자로
+	}
+}
+```
+## 4. JSON 구조체 변수의 동적 메모리 해제
+```
+void freeJSON(JSON *json)    // JSON 해제 함수
+{
+	for (int i = 0; i < TOKEN_COUNT; i++)            // 토큰 개수만큼 반복
+	{
+		if (json->tokens[i].type == TOKEN_STRING)    // 토큰 종류가 문자열이면
+			free(json->tokens[i].string);            // 동적 메모리 해제
+	}
+}
+```
+## 5. main 함수
+```
+int main()
+{
+	int size;    // 문서 크기
+
+	// 파일에서 JSON 문서를 읽음, 문서 크기를 구함
+	char *doc = readFile("example.json", &size);
+	if (doc == NULL)
+		return -1;
+
+	//JSON json = { 0, };    // JSON 구조체 변수 선언 및 초기화
+	JSON json = { 0, };
+	parseJSON(doc, size, &json);    // JSON 문서 파싱
+
+	printf("%s: %s\n", json.tokens[0].string,json.tokens[1].string);       // 토큰에 저장된 문자열 출력(Title)
+	printf("%s: %s\n", json.tokens[2].string,json.tokens[3].string);       // 토큰에 저장된 문자열 출력(Genre)
+	printf("%s: %s\n", json.tokens[4].string,json.tokens[5].string);    // 토큰에 저장된 문자열 출력(Director)
+	printf("%s: %s\n", json.tokens[6].string,json.tokens[7].string);
+
+
+	freeJSON(&json);    // json 안에 할당된 동적 메모리 해제
+
+	free(doc);    // 문서 동적 메모리 해제
+
+	return 0;
+}
+```
+
